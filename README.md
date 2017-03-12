@@ -1,2 +1,2 @@
 # HsCompressWord
-Haskellでの単語長圧縮関連
+単語長の圧縮関連(Haskell実装)
