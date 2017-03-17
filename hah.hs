@@ -1,5 +1,5 @@
 import System.Environment (getArgs)
-import WordCompress as WComp
+import qualified WordCompress as WComp
 
 data Option =
   Version
