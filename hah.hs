@@ -24,26 +24,35 @@ getOption :: [String] -> Option -> Either String Option
 getOption [] Parameters{ word = "" } = Right Help
 getOption [] option = Right option
 getOption ("-h":xs) _ = Right Help
-
-getOption ["-c"] _ = Left "argument to '-c' is missing"
-getOption ("-c":val:xs) option = getOption xs option{ count = (read val) }
-
+-- value of splitting word
+getOption [op@"-c"] _ = Left ("argument to '" ++ op ++ "' is missing")
+getOption (op@"-c":val@(h:_):xs) option = case h of
+  '-' -> Left ("argument to '" ++ op ++ "' is missing")
+  otherwise -> getOption xs option{ count = (read val) }
+-- mode option
 getOption ("--normal":xs) option = getOption xs option { mode = "normal" }
 getOption ("-n":xs) option = getOption xs option { mode = "normal" }
 getOption ("--divide":xs) option = getOption xs option { mode = "divide" }
 getOption ("-d":xs) option = getOption xs option { mode = "divide" }
-
-getOption ["--consonants"] _ = Left "argument to '--consonants' is missing"
-getOption ("--consonants":val:xs) option = getOption xs option { consonants = val }
-getOption ["-C"] _ = Left "argument to '-C' is missing"
-getOption ("-C":val@(h:_):xs) option = case h of
-  '-' -> Left "argument to '-C' is missing"
+-- consonants option
+getOption [op@"--consonants"] _ = Left ("argument to '" ++ op ++ "' is missing")
+getOption (op@"--consonants":val@(h:_):xs) option = case h of
+  '-' -> Left ("argument to '" ++ op ++ "' is missing")
   otherwise -> getOption xs option { consonants = val }
+getOption [op@"-C"] _ = Left ("argument to '" ++ op ++ "' is missing")
+getOption (op@"-C":val@(h:_):xs) option = case h of
+  '-' -> Left ("argument to '"++ op ++"' is missing")
+  otherwise -> getOption xs option { consonants = val }
+-- vowels option
 getOption ["--vowels"] _ = Left "argument to '--vowels' is missing"
-getOption ("--vowels":val:xs) option = getOption xs option { vowels = val }
+getOption (op@"--vowels":val@(h:_):xs) option = case h of
+  '-' -> Left ("argument to '"++ op ++"' is missing")
+  otherwise -> getOption xs option { vowels = val }
 getOption ["-V"] _ = Left "argument to '-V' is missing"
-getOption ("-V":val:xs) option = getOption xs option { vowels = val }
-
+getOption (op@"-V":val@(h:_):xs) option = case h of
+  '-' -> Left ("argument to '"++ op ++"' is missing")
+  otherwise -> getOption xs option { vowels = val }
+-- other
 getOption (inWord:xs) option = getOption xs option{ word = inWord }
 
 help :: IO()
