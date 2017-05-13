@@ -28,19 +28,23 @@ matrix_compress str = [head str] ++ next_compress (fromIntegral $ ceiling $ sqrt
                       | otherwise = let nextStr = drop size str
                                     in [head nextStr] ++ next_compress size (tail nextStr)
 
+divcv :: String -> String -> [(Char, Int)] -> ([(Char, Int)], [(Char, Int)])
 divcv consonants vowels tlist =
   let clist = filter (divider consonants) tlist
       vlist = filter (divider vowels) tlist
   in (clist, vlist) where divider param = \(str, _) -> elem str param
 
+sort_fst :: [(Char, Int)] -> String
+sort_fst tlist = map (\(ch, _) -> ch) $ List.sortBy (Ord.comparing snd) tlist
+
 divhah_compress :: WordCompress -> String -> String
 divhah_compress (DivideHah width consonants vowels) str =
-  map (\(ch, _) -> ch) $ List.sortBy (Ord.comparing snd) $ compress $ divcv consonants vowels $ zip str [0..]
+  sort_fst $ compress $ divcv consonants vowels $ zip str [0..]
   where compress (clist, vlist) = hah_compress width clist ++ hah_compress width vlist
 
 divmatrix_compress :: WordCompress -> String -> String
 divmatrix_compress (DivMatrix consonants vowels) str = 
-  map (\(ch, _) -> ch) $ List.sortBy (Ord.comparing snd) $ compress $ divcv consonants vowels $ zip str [0..]
+  sort_fst $ compress $ divcv consonants vowels $ zip str [0..]
   where compress (clist, vlist) = matrix_compress clist ++ matrix_compress vlist
 
 compress :: WordCompress -> String -> String
