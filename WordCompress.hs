@@ -10,50 +10,68 @@ import qualified Data.Ord as Ord;
 data WordCompress =
   Hah { width :: Int } |
   DivideHah { width :: Int, consonants :: String, vowels :: String } |
+  SeparateHah { width :: Int, consonants :: String, vowels :: String } |
   Matrix |
   DivMatrix { consonants :: String, vowels :: String }
 
-hah_compress :: Int -> [a] -> [a]
-hah_compress _ []  = []
-hah_compress _ [ch] = [ch]
-hah_compress width str = let x = take width str
-                         in [head x, last x] ++ hah_compress width (drop width str)
+hahCompress :: Int -> [a] -> [a]
+hahCompress _ []  = []
+hahCompress _ [ch] = [ch]
+hahCompress w str = let x = take w str
+                    in head x : last x : hahCompress w (drop w str)
 
-matrix_compress :: [a] -> [a]
-matrix_compress [] = []
-matrix_compress str = [head str] ++ next_compress (fromIntegral $ ceiling $ sqrt $ fromIntegral $ length str) (tail str)
-  where next_compress _ [] = []
-        next_compress size str
-                      | size >= length str = [last str]
-                      | otherwise = let nextStr = drop size str
-                                    in [head nextStr] ++ next_compress size (tail nextStr)
+matrixCompress :: [a] -> [a]
+matrixCompress [] = []
+matrixCompress str = head str : nextCompress (ceiling (sqrt $ fromIntegral $ length str :: Double)) (tail str)
+  where nextCompress _ [] = []
+        nextCompress size subStr
+                      | size >= length subStr = [last subStr]
+                      | otherwise = let nextStr = drop size subStr
+                                    in head nextStr : nextCompress size (tail nextStr)
 
 divcv :: String -> String -> [(Char, Int)] -> ([(Char, Int)], [(Char, Int)])
-divcv consonants vowels tlist =
-  let clist = filter (divider consonants) tlist
-      vlist = filter (divider vowels) tlist
-  in (clist, vlist) where divider param = \(str, _) -> elem str param
+divcv cs vs tlist =
+  let clist = filter (divider cs) tlist
+      vlist = filter (divider vs) tlist
+  in (clist, vlist) where divider param (str, _) = str `elem` param
 
-sort_fst :: [(Char, Int)] -> String
-sort_fst tlist = map (\(ch, _) -> ch) $ List.sortBy (Ord.comparing snd) tlist
+sepcv :: String -> String -> String -> [String]
+sepcv _ _ [] = []
+sepcv cs vs tlist =
+  let sepc = span (\x -> any (== x) cs) tlist
+      sepv = span (\x -> any (== x) vs) $ snd sepc
+  in (fst sepc) : (fst sepv) : (sepcv cs vs $ snd sepv)
 
-divhah_compress :: WordCompress -> String -> String
-divhah_compress (DivideHah width consonants vowels) str =
-  sort_fst $ compress $ divcv consonants vowels $ zip str [0..]
-  where compress (clist, vlist) = hah_compress width clist ++ hah_compress width vlist
+sortFst :: [(Char, Int)] -> String
+sortFst tlist = map fst $ List.sortBy (Ord.comparing snd) tlist
 
-divmatrix_compress :: WordCompress -> String -> String
-divmatrix_compress (DivMatrix consonants vowels) str = 
-  sort_fst $ compress $ divcv consonants vowels $ zip str [0..]
-  where compress (clist, vlist) = matrix_compress clist ++ matrix_compress vlist
+divCompress :: (([(Char, Int)], [(Char, Int)]) -> [(Char, Int)]) -> String -> String -> String -> String
+divCompress comp cs vs str = sortFst $ comp $ divcv cs vs $ zip str [0..]
+
+divhahCompress :: WordCompress -> String -> String
+divhahCompress (DivideHah w cs vs) str = divCompress comp cs vs str
+  where comp (clist, vlist) = hahCompress w clist ++ hahCompress w vlist
+divhahCompress _ _ = ""
+
+divmatrixCompress :: WordCompress -> String -> String
+divmatrixCompress (DivMatrix cs vs) str = divCompress comp cs vs str
+  where comp (clist, vlist) = matrixCompress clist ++ matrixCompress vlist
+divmatrixCompress _ _ = ""
+
+sephahCompress :: WordCompress -> String -> String
+sephahCompress (SeparateHah w cs vs) str = concat $ hahCompress w $ sepcv cs vs str
+sephahCompress _ _ = ""
 
 compress :: WordCompress -> String -> String
-compress (Hah width) str = hah_compress width str
-compress (Matrix) str = matrix_compress str
-compress divhah@(DivideHah _ _ _) str = divhah_compress divhah str
-compress divmatrix@(DivMatrix _ _) str = divmatrix_compress divmatrix str
+compress (Hah w) str = hahCompress w str
+compress Matrix str = matrixCompress str
+compress divhah@DivideHah{} str = divhahCompress divhah str
+compress divmatrix@DivMatrix{} str = divmatrixCompress divmatrix str
+compress sephah@SeparateHah{} str = sephahCompress sephah str 
 
 --defaultOrder = "abcdefghijklmnopqrstuvwxyz"
+defaultConsonants :: String
 defaultConsonants = "bcdfghjklmnpqrstvwxyz"
-defaultVowels = "aeiou"
 
+defaultVowels :: String
+defaultVowels = "aeiou"
